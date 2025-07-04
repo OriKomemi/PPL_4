@@ -51,19 +51,35 @@
 ; Purpose: Returns the concatination of the given two lists, with cont pre-processing
 (define append$
   (lambda (lst1 lst2 cont)
-    #f ;@TODO
-  )
-)
+    (let loop ((l lst1) (c cont))
+      (if (empty? l)
+          (c lst2)
+          (loop (cdr l)
+                (lambda (res)
+                  (c (cons (car l) res))))))))
 
 ;;; Q3.2
 ; Signature: equal-trees$(tree1, tree2, succ, fail) 
 ; Type: [Tree * Tree * [Tree ->T1] * [Pair->T2] -> T1 U T2
 ; Purpose: Determines the structure identity of a given two lists, with post-processing succ/fail
-(define equal-trees$ 
+(define equal-trees$
   (lambda (tree1 tree2 succ fail)
-    #f ;@TODO
-  )
-)
+    (define (fail-with a b)
+      (fail (append (if (list? a) a (list a))
+                    (if (list? b) b (list b)))))
+    (cond
+      [(and (leaf? tree1) (leaf? tree2))
+       (succ (cons tree1 tree2))]
+      [(and (list? tree1) (list? tree2))
+       (let loop ((l1 tree1) (l2 tree2) (acc '()))
+         (cond
+           [(and (null? l1) (null? l2)) (succ (reverse acc))]
+           [(or (null? l1) (null? l2)) (fail-with l1 l2)]
+           [else
+            (equal-trees$ (car l1) (car l2)
+              (lambda (r) (loop (cdr l1) (cdr l2) (cons r acc)))
+              fail-with)]))]
+      [else (fail-with tree1 tree2)]))
 
 
 
@@ -75,7 +91,8 @@
 ;; constant real number
 (define as-real
   (lambda (x)
-    #f ;@TODO
+    (letrec ((r (cons-lzl x (lambda () r))))
+      r)
   )
 )
 
@@ -85,7 +102,10 @@
 ;; Purpose: Addition of real numbers
 (define ++
   (lambda (x y)
-    #f ;@TODO
+    (if (or (empty-lzl? x) (empty-lzl? y))
+        empty-lzl
+        (cons-lzl (+ (head x) (head y))
+                  (lambda () (++ (tail x) (tail y)))))
   )
 )
 
@@ -94,7 +114,10 @@
 ;; Purpose: Subtraction of real numbers
 (define --
   (lambda (x y)
-    #f ;@TODO
+    (if (or (empty-lzl? x) (empty-lzl? y))
+        empty-lzl
+        (cons-lzl (- (head x) (head y))
+                  (lambda () (-- (tail x) (tail y)))))
   )
 )
 
@@ -103,7 +126,10 @@
 ;; Purpose: Multiplication of real numbers
 (define **
   (lambda (x y)
-    #f ;@TODO
+    (if (or (empty-lzl? x) (empty-lzl? y))
+        empty-lzl
+        (cons-lzl (* (head x) (head y))
+                  (lambda () (** (tail x) (tail y)))))
   )
 )
 ;; Signature: //(x, y)
@@ -111,7 +137,10 @@
 ;; Purpose: Division of real numbers
 (define //
   (lambda (x y)
-    #f ;@TODO
+    (if (or (empty-lzl? x) (empty-lzl? y))
+        empty-lzl
+        (cons-lzl (/ (head x) (head y))
+                  (lambda () (// (tail x) (tail y)))))
   )
 )
 
@@ -123,7 +152,9 @@
 ;; square root of `x`
 (define sqrt-with
   (lambda (x y)
-    #f ;@TODO
+    (let* ((next (map-lzl (lambda (z) (/ z 2))
+                          (++ y (// x y)))))
+      (cons-lzl y (lambda () (sqrt-with x next))))
   )
 )
 
@@ -133,7 +164,10 @@
 ;; Purpose: Diagonalize an infinite lazy list
 (define diag
   (lambda (lzl)
-    #f ;@TODO
+    (letrec ((diag-from (lambda (seqs n)
+                          (cons-lzl (nth (head seqs) n)
+                                    (lambda () (diag-from (tail seqs) (+ n 1)))))))
+      (diag-from lzl 0))
   )
 )
 
@@ -144,6 +178,6 @@
 ;; Example: (take (rsqrt (as-real 4.0)) 6) => '(4.0 2.5 2.05 2.0006097560975613 2.0000000929222947 2.000000000000002)
 (define rsqrt
   (lambda (x)
-    #f ;@TODO
+    (diag (sqrt-with x x))
   )
 )
